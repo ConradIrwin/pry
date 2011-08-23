@@ -316,6 +316,10 @@ class Pry
       Pry.line_buffer.push(*code.each_line)
       Pry.current_line += code.each_line.count
     end
+
+    code.each_line{ Readline::HISTORY.pop }
+    Readline::HISTORY << code
+
     if Readline::HISTORY.size > 0
 
       # all this fluff is to get around annoying bug in libedit on
