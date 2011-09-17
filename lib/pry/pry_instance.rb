@@ -173,13 +173,18 @@ class Pry
 
     repl_prologue(target)
 
-    break_data = catch(:breakout) do
-      loop do
-        rep(binding_stack.last)
+    break_data = nil
+    exception = catch(:raise_up) do
+      break_data = catch(:breakout) do
+        loop do
+          rep(binding_stack.last)
+        end
       end
+      exception = false
     end
 
     repl_epilogue(target)
+    raise exception if exception
     break_data || target_self
   end
 
@@ -362,6 +367,48 @@ class Pry
 
     self.last_exception = ex
   end
+
+  # Raise an exception out of Pry.
+  #
+  # See Kernel#raise for documentation of parameters.
+  # See rb_make_exception for the inbuilt implementation.
+  #
+  # This is necessary so that the raise-up command can tell the
+  # difference between an exception the user has decided to raise,
+  # and a mistake in specifying that exception.
+  #
+  # (i.e. raise-up RunThymeError.new should not be the same as
+  #  raise-up NameError, "unititialized constant RunThymeError")
+
+  def raise_up_common(force, *args)
+    exception = if args == []
+                  last_exception || RuntimeError.new
+                elsif args.length == 1 && args.first.is_a?(String)
+                  RuntimeError.new(args.first)
+                elsif args.length > 3
+                  raise ArgumentError, "wrong number of arguments"
+                elsif !args.first.respond_to?(:exception)
+                  raise TypeError, "exception class/object expected"
+                elsif args.length === 1
+                  args.first.exception
+                else
+                  args.first.exception(args[1])
+                end
+
+    raise TypeError, "exception object expected" unless exception.is_a? Exception
+
+    exception.set_backtrace(args.length === 3 ? args[2] : caller(1))
+
+    if force || binding_stack.one?
+      binding_stack.clear
+      throw :raise_up, exception
+    else
+      binding_stack.pop
+      raise exception
+    end
+  end
+  def raise_up(*args); raise_up_common(false, *args); end
+  def raise_up!(*args); raise_up_common(true, *args); end
 
   # Update Pry's internal state after evalling code.
   # This method should not need to be invoked directly.

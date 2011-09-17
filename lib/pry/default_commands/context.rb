@@ -121,6 +121,28 @@ class Pry
       alias_command "quit-program", "exit-program", ""
       alias_command "!!!", "exit-program", ""
 
+      # N.B. using a regular expresion here so that "raise-up 'foo'" does the right thing.
+      command(/raise-up(!?\b.*)/, "Raise an exception out of the current pry instance. See `raise-up --help` for detail.",
+              :listing => "raise-up", :keep_retval => true, :interpolate => false) do |arg|
+
+        if arg.strip == "-h" || arg.strip == "--help"
+          output.puts unindent <<-USAGE
+            Raise up, like exit, allows you to quit pry. Instead of returning a value however, it raises an exception.
+            If you don't provide the exception to be raised, it will use the most recent exception (in pry _ex_).
+
+            e.g. `raise-up "get-me-out-of-here"` is equivalent to:
+                 `raise "get-me-out-of-here"
+                  raise-up`
+
+            When called as raise-up! (with an exclamation mark), this command raises the exception through
+            any nested prys you have created by "cd"ing into objects.
+          USAGE
+        else
+          # Handle 'raise-up', 'raise-up "foo"', 'raise-up RuntimeError, 'farble' without using RegExps...
+          target.eval("_pry_.raise_up#{arg}")
+        end
+      end
+
       command "!pry", "Start a Pry session on current self; this even works mid multi-line expression." do
         target.pry
       end
