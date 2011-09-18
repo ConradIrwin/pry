@@ -245,4 +245,22 @@ describe "Pry::DefaultCommands::Context" do
       $obj.should == :mon_ouie
     end
   end
+
+  describe "reraise" do
+    it "should show an error if you try to reraise when it's not possible" do
+      mock_pry("1 + 2", "reraise").should =~ /\(pry\) error: No exception to reraise/
+    end
+
+    it "should pop out one level of context" do
+      mock_pry("cd 1", "cd 2", "gerflugle", "reraise", '"self = #{self}"').should =~ /self = 1/
+    end
+
+    it "should set _ex_ in the surrounding context" do
+      mock_pry("cd 1", "1/0", "reraise", '"_ex_ = #{_ex_.class}"').should =~ /_ex_ = ZeroDivisionError/
+    end
+
+    it "should exit pry if there are no further levels of context" do
+      lambda{ mock_pry("splat", "reraise") }.should.raise NameError
+    end
+  end
 end

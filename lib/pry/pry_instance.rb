@@ -173,13 +173,18 @@ class Pry
 
     repl_prologue(target)
 
-    break_data = catch(:breakout) do
-      loop do
-        rep(binding_stack.last)
+    break_data = nil
+    exception = catch(:reraise) do
+      break_data = catch(:breakout) do
+        loop do
+          rep(binding_stack.last)
+        end
       end
+      exception = false
     end
 
     repl_epilogue(target)
+    raise exception if exception
     break_data || target_self
   end
 

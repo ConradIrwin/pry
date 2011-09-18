@@ -121,6 +121,23 @@ class Pry
       alias_command "quit-program", "exit-program"
       alias_command "!!!", "exit-program"
 
+      command "reraise", "Throw the most recently raised exception out of the current pry context" do
+        unless _pry_.last_exception
+          output.puts "(pry) error: No exception to reraise."
+          next
+        end
+
+        if _pry_.binding_stack.one?
+          _pry_.binding_stack.clear
+          throw(:reraise, _pry_.last_exception)
+        else
+          _pry_.binding_stack.pop.eval('self')
+          raise _pry_.last_exception
+        end
+      end
+      alias_command "re-raise", "reraise"
+      alias_command "raise-up", "reraise"
+
       command "!pry", "Start a Pry session on current self; this even works mid multi-line expression." do
         target.pry
       end
