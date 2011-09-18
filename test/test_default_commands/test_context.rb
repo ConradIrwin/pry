@@ -271,6 +271,10 @@ describe "Pry::DefaultCommands::Context" do
       $outer.should == :outer
     end
 
+    it "should raise the most recently raised exception" do
+      lambda { mock_pry("raise NameError, 'homographery'","raise-up") }.should.raise NameError, 'homographery'
+    end
+
     it "should allow you to cd up and (eventually) out" do
       $deep = $inner = $outer = nil
       b = Pry.binding_for(:outer)
@@ -282,6 +286,12 @@ describe "Pry::DefaultCommands::Context" do
       $deep.should == :deep
       $inner.should == :inner
       $outer.should == :outer
+    end
+  end
+
+  describe "raise-up!" do
+    it "should jump immediately out of nested context's" do
+      lambda { mock_pry("cd 1", "cd 2", "cd 3", "raise-up! 'fancy that...'") }.should.raise RuntimeError, 'fancy that...'
     end
   end
 end
