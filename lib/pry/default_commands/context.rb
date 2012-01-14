@@ -14,7 +14,6 @@ class Pry
           # special case when we only get a single "/", return to root
           stack  = [stack.first] if path.empty?
 
-          resolve_failure = false
           path.each do |context|
             begin
               case context.chomp
@@ -35,12 +34,9 @@ class Pry
             rescue RescuableException => e
               output.puts "Bad object path: #{arg_string.chomp}. Failed trying to resolve: #{context}"
               output.puts e.inspect
-              resolve_failure = true
-              break
+              return
             end
           end
-
-          return if resolve_failure
 
           _pry_.binding_stack = stack
         end
