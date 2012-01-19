@@ -201,19 +201,17 @@ class Pry
   end
 
   def self.default_editor_for_platform
-    return ENV['VISUAL'] if ENV['VISUAL'] && !ENV['VISUAL'].empty?
-    return ENV['EDITOR'] if ENV['EDITOR'] && !ENV['EDITOR'].empty?
-    return ENV['SELECTED_EDITOR'] if ENV['SELECTED_EDITOR'] && !ENV['SELECTED_EDITOR'].empty?
-
-    selected_editor = File.expand_path('~/.selected_editor')
-    if File.exist?(selected_editor)
-      return File.foreach(selected_editor).to_a.delete_if { |line| line !~ /\s*SELECTED_EDITOR=.+/ }.first.strip.split('=').last.strip
+    %w(VISUAL EDITOR).map{ |x| ENV[x] }.each do |editor|
+      return editor if editor && !editor.empty?
     end
 
     if Helpers::BaseHelpers.windows?
       'notepad'
     else
-      %w(editor nano vi).detect do |editor|
+
+      # sensible-editor is a debian/ubuntu utility that checks the myriad of ways that
+      # those systems have of configuring your editor and does the right thing.
+      %w(sensible-editor nano vi).detect do |editor|
         system("which #{editor} > /dev/null 2>&1")
       end
     end
