@@ -5,7 +5,7 @@ require 'pry/config'
 class Pry
 
   # The RC Files to load.
-  RC_FILES = ["~/.pryrc", "./.pryrc"]
+  RC_FILES = ['/etc/pryrc', "~/.pryrc", "./.pryrc"]
 
   # class accessors
   class << self
@@ -201,13 +201,17 @@ class Pry
   end
 
   def self.default_editor_for_platform
-    return ENV['VISUAL'] if ENV['VISUAL'] and not ENV['VISUAL'].empty?
-    return ENV['EDITOR'] if ENV['EDITOR'] and not ENV['EDITOR'].empty?
+    %w(VISUAL EDITOR).map{ |x| ENV[x] }.each do |editor|
+      return editor if editor && !editor.empty?
+    end
 
     if Helpers::BaseHelpers.windows?
       'notepad'
     else
-      %w(editor nano vi).detect do |editor|
+
+      # sensible-editor is a debian/ubuntu utility that checks the myriad of ways that
+      # those systems have of configuring your editor and does the right thing.
+      %w(sensible-editor nano vi).detect do |editor|
         system("which #{editor} > /dev/null 2>&1")
       end
     end
